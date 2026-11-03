@@ -2518,40 +2518,66 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual bool SkipSerialization => false;
 
+    [CommandProperty(AccessLevel.Counselor)]
+    public int InstanceId => (m_Map == Map.Internal && Player ? LogoutMap : m_Map)?.InstanceId ?? 0;
+
+    public virtual bool TryChangeInstance(int id)
+    {
+        if (Deleted || Map == null || Map == Map.Internal || Map.GetInstance(id) is not { } destination)
+        {
+            return false;
+        }
+
+        if (destination != Map)
+        {
+            NetState?.CancelAllTrades();
+            if (FindBankNoCreate() is { Opened: true } bank)
+            {
+                bank.Close();
+            }
+
+            Combatant = null;
+            ChangeMap(destination);
+        }
+
+        return Map == destination;
+    }
+
     [CommandProperty(AccessLevel.Counselor, AccessLevel.GameMaster)]
     public Map Map
     {
         get => m_Map;
         set
         {
-            if (Deleted)
+            if (!Deleted && m_Map != value && !CrossesWorldBoundary(value))
             {
-                return;
-            }
-
-            if (m_Map != value)
-            {
-                m_NetState?.ValidateAllTrades();
-
-                var oldMap = m_Map;
-
-                if (m_Map != null)
-                {
-                    m_Map.OnLeave(this);
-
-                    ClearScreen();
-                    SendRemovePacket();
-                }
-
-                for (var i = 0; i < Items.Count; ++i)
-                {
-                    Items[i].Map = value;
-                }
-
-                m_Map = value;
-                InternalMapChange(oldMap);
+                ChangeMap(value);
             }
         }
+    }
+
+    private bool CrossesWorldBoundary(Map destination) =>
+        m_Map != null && destination != null && m_Map != Map.Internal && destination != Map.Internal &&
+        m_Map.InstanceId != destination.InstanceId;
+
+    private void ChangeMap(Map destination)
+    {
+        m_NetState?.ValidateAllTrades();
+        var oldMap = m_Map;
+        if (oldMap != null)
+        {
+            oldMap.OnLeave(this);
+            ClearScreen();
+            SendRemovePacket();
+        }
+
+        for (var i = 0; i < Items.Count; ++i)
+        {
+            Items[i].Map = destination;
+        }
+
+        m_Map = destination;
+        InternalMapChange(oldMap);
     }
 
     [CommandProperty(AccessLevel.Counselor, AccessLevel.GameMaster)]
@@ -2603,7 +2629,8 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual void MoveToWorld(Point3D newLocation, Map map)
     {
-        if (Deleted)
+        // Ordinary travel cannot cross worlds. New spawns and login can enter from Internal.
+        if (Deleted || CrossesWorldBoundary(map))
         {
             return;
         }
@@ -5958,7 +5985,7 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual void Damage(int amount, Mobile from = null, bool informMount = true, bool ignoreEvilOmen = false)
     {
-        if (amount <= 0)
+        if (amount <= 0 || from != null && from.InstanceId != InstanceId)
         {
             return;
         }
@@ -6125,7 +6152,7 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public void Heal(int amount, Mobile from, bool message = true)
     {
-        if (!Alive || IsDeadBondedPet)
+        if (!Alive || IsDeadBondedPet || from != null && from.InstanceId != InstanceId)
         {
             return;
         }
@@ -8244,7 +8271,7 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual bool CanBeBeneficial(Mobile target, bool message, bool allowDead)
     {
-        if (target == null)
+        if (target == null || target.InstanceId != InstanceId)
         {
             return false;
         }
@@ -8307,7 +8334,7 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual void DoBeneficial(Mobile target)
     {
-        if (target == null)
+        if (target == null || target.InstanceId != InstanceId)
         {
             return;
         }
@@ -8335,7 +8362,7 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual bool CanBeHarmful(Mobile target, bool message, bool ignoreOurBlessedness)
     {
-        if (target == null)
+        if (target == null || target.InstanceId != InstanceId)
         {
             return false;
         }
@@ -8396,7 +8423,7 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
     public virtual void DoHarmful(Mobile target, bool indirect = false)
     {
-        if (target == null || Deleted)
+        if (target == null || Deleted || target.InstanceId != InstanceId)
         {
             return;
         }
@@ -8710,6 +8737,12 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
     /// </returns>
     public virtual ApplyPoisonResult ApplyPoison(Mobile from, Poison poison)
     {
+        if (from != null && from.InstanceId != InstanceId)
+        {
+            return ApplyPoisonResult.Immune;
+        }
+
+
         if (poison == null)
         {
             CurePoison(from);
@@ -8770,6 +8803,12 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
     /// <returns>True if poison was cured, false if otherwise.</returns>
     public virtual bool CurePoison(Mobile from)
     {
+        if (from != null && from.InstanceId != InstanceId)
+        {
+            return false;
+        }
+
+
         if (CheckCure(from))
         {
             var oldPoison = m_Poison;

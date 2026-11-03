@@ -613,7 +613,7 @@ namespace Server.Spells
         {
             message = null;
 
-            if (IsInvalid(map, loc)) // null, internal, out of bounds
+            if (IsInvalid(map, loc) || caster != null && caster.InstanceId != map.InstanceId)
             {
                 message = InvalidTravelMessage(type);
                 return false;
@@ -912,6 +912,11 @@ namespace Server.Spells
 
         public static void Damage(Spell spell, TimeSpan delay, Mobile target, Mobile from, double damage)
         {
+            if (from != null && from.InstanceId != target.InstanceId)
+            {
+                return;
+            }
+
             var damageGiven = (int)damage;
 
             if (delay == TimeSpan.Zero)
@@ -980,6 +985,11 @@ namespace Server.Spells
             int cold, int pois, int nrgy, int chaos = 0, DFAlgorithm dfa = DFAlgorithm.Standard
         )
         {
+            if (from != null && from.InstanceId != target.InstanceId)
+            {
+                return;
+            }
+
             var dmg = (int)damage;
 
             if (delay == TimeSpan.Zero)
@@ -1051,6 +1061,7 @@ namespace Server.Spells
 
         private class SpellDamageTimer : Timer
         {
+            private readonly int _instanceId;
             private readonly Mobile m_From;
             private readonly Spell m_Spell;
             private readonly Mobile m_Target;
@@ -1058,6 +1069,7 @@ namespace Server.Spells
 
             public SpellDamageTimer(Spell s, Mobile target, Mobile from, int damage, TimeSpan delay) : base(delay)
             {
+                _instanceId = target.InstanceId;
                 m_Target = target;
                 m_From = from;
                 m_Damage = damage;
@@ -1071,6 +1083,12 @@ namespace Server.Spells
 
             protected override void OnTick()
             {
+                if (m_Target.InstanceId != _instanceId || m_From != null && m_From.InstanceId != _instanceId)
+                {
+                    m_Spell?.RemoveDelayedDamageContext(m_Target);
+                    return;
+                }
+
                 (m_From as BaseCreature)?.AlterSpellDamageTo(m_Target, ref m_Damage);
                 (m_Target as BaseCreature)?.AlterSpellDamageFrom(m_From, ref m_Damage);
 
@@ -1081,6 +1099,7 @@ namespace Server.Spells
 
         private class SpellDamageTimerAOS : Timer
         {
+            private readonly int _instanceId;
             private readonly int m_Chaos;
             private readonly int m_Cold;
             private readonly DFAlgorithm m_DFA;
@@ -1098,6 +1117,7 @@ namespace Server.Spells
                 int pois, int nrgy, int chaos, DFAlgorithm dfa
             ) : base(delay)
             {
+                _instanceId = target.InstanceId;
                 m_Target = target;
                 m_From = from;
                 m_Damage = damage;
@@ -1118,8 +1138,10 @@ namespace Server.Spells
 
             protected override void OnTick()
             {
-                if (m_Target.Deleted || !m_Target.Alive)
+                if (m_Target.Deleted || !m_Target.Alive || m_Target.InstanceId != _instanceId ||
+                    m_From != null && m_From.InstanceId != _instanceId)
                 {
+                    m_Spell?.RemoveDelayedDamageContext(m_Target);
                     return;
                 }
 

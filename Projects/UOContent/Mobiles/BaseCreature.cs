@@ -1890,6 +1890,11 @@ namespace Server.Mobiles
 
         public override void Damage(int amount, Mobile from = null, bool informMount = true, bool ignoreEvilOmen = false)
         {
+            if (from != null && from.InstanceId != InstanceId)
+            {
+                return;
+            }
+
             var oldHits = Hits;
 
             // Blood oath reflects the original damage the attacker dealt, before other modifiers.
@@ -1953,6 +1958,11 @@ namespace Server.Mobiles
 
         public override ApplyPoisonResult ApplyPoison(Mobile from, Poison poison)
         {
+            if (from != null && from.InstanceId != InstanceId)
+            {
+                return ApplyPoisonResult.Immune;
+            }
+
             if (!Alive || IsDeadPet)
             {
                 return ApplyPoisonResult.Immune;

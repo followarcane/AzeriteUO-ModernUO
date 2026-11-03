@@ -67,7 +67,7 @@ public static class MapUO
         {
             var m = guild!.Members[i];
 
-            if (m?.NetState == null || m == from)
+            if (m?.NetState == null || m == from || m.InstanceId != from.InstanceId)
             {
                 continue;
             }
@@ -127,7 +127,7 @@ public static class MapUO
             var pmi = party!.Members[i];
             var mob = pmi?.Mobile;
 
-            if (mob?.NetState == null || mob == from)
+            if (mob?.NetState == null || mob == from || mob.InstanceId != from.InstanceId)
             {
                 continue;
             }

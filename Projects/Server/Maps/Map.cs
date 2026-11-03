@@ -160,7 +160,7 @@ public sealed partial class Map : IComparable<Map>, ISpanFormattable, ISpanParsa
 
     public static int MaxLOSDistance { get; set; } = 25;
 
-    public int CompareTo(Map other) => other == null ? -1 : MapID.CompareTo(other.MapID);
+    public int CompareTo(Map other) => other == null ? -1 : MapIndex.CompareTo(other.MapIndex);
 
     public static string[] GetMapNames()
     {

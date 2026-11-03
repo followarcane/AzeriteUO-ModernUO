@@ -12,6 +12,7 @@ public static class TestMapDefinitions
         RegisterMap(5, 5, 5, 1280, 4096, 1, "TerMur", MapRules.TrammelRules);
 
         RegisterMap(0x7F, 0x7F, 0x7F, Map.SectorSize, Map.SectorSize, 1, "Internal", MapRules.Internal);
+        Map.RegisterWorldInstance(42, 32);
     }
 
     private static void RegisterMap(

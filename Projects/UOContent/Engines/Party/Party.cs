@@ -208,7 +208,7 @@ namespace Server.Engines.PartySystem
                 PartyPackets.CreatePartyMemberList(memberList, this);
                 f.NetState?.Send(memberList);
 
-                if (f != m)
+                if (f != m && f.InstanceId == m.InstanceId)
                 {
                     f.NetState.SendMobileStatusCompact(m, m.CanBeRenamedBy(f));
                     OutgoingMobilePackets.CreateMobileAttributes(attrsPacket, m, true);
@@ -513,7 +513,7 @@ namespace Server.Engines.PartySystem
                 {
                     var m = mi.Mobile;
 
-                    if (m == m_Mobile)
+                    if (m == m_Mobile || m.InstanceId != m_Mobile.InstanceId)
                     {
                         continue;
                     }

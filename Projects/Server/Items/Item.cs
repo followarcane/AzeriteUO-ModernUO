@@ -1336,6 +1336,9 @@ public partial class Item : IHued, IComparable<Item>, ISpawnable, IObjectPropert
     /// </summary>
     public bool Deleted => GetFlag(ImplFlag.Deleted);
 
+    [CommandProperty(AccessLevel.Counselor)]
+    public int InstanceId => Map?.InstanceId ?? 0;
+
     [CommandProperty(AccessLevel.Counselor, AccessLevel.GameMaster)]
     public Map Map
     {
@@ -4382,6 +4385,12 @@ public partial class Item : IHued, IComparable<Item>, ISpawnable, IObjectPropert
 
     public virtual bool IsAccessibleTo(Mobile check)
     {
+        if (check != null && check.InstanceId != InstanceId)
+        {
+            return false;
+        }
+
+
         if (m_Parent is Item item)
         {
             return item.IsAccessibleTo(check);

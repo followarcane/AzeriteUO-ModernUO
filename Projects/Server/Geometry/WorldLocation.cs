@@ -90,11 +90,10 @@ public struct WorldLocation : IPoint3D, IComparable<WorldLocation>, IEquatable<W
     }
 
     public bool Equals(WorldLocation other) =>
-        _loc.Equals(other._loc) && _map?.MapID == other._map?.MapID;
+        this == other;
 
     public bool Equals(IEntity other) =>
-        !ReferenceEquals(other, null) && _loc == other.Location &&
-        _map?.MapID == other.Map?.MapID;
+        this == other;
 
     public override bool Equals(object obj) =>
         obj is WorldLocation other && Equals(other);
@@ -115,10 +114,9 @@ public struct WorldLocation : IPoint3D, IComparable<WorldLocation>, IEquatable<W
     public static bool operator ==(WorldLocation l, IEntity r) =>
         !ReferenceEquals(r, null) && l._loc == r.Location && l._map == r.Map;
 
-    public static bool operator !=(WorldLocation l, WorldLocation r) => l._loc != r._loc && l._map != r._map;
+    public static bool operator !=(WorldLocation l, WorldLocation r) => !(l == r);
 
-    public static bool operator !=(WorldLocation l, IEntity r) =>
-        !ReferenceEquals(r, null) && l._loc != r.Location && l._map != r.Map;
+    public static bool operator !=(WorldLocation l, IEntity r) => !(l == r);
 
     public static bool operator >(WorldLocation l, WorldLocation r) => l._loc > r._loc && l._map == r._map;
 

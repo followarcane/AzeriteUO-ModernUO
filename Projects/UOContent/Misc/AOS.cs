@@ -49,7 +49,7 @@ namespace Server
             int nrgy, int chaos = 0, int direct = 0, bool keepAlive = false, bool archer = false, bool deathStrike = false
         )
         {
-            if (m?.Deleted != false || !m.Alive || damage <= 0)
+            if (m?.Deleted != false || !m.Alive || damage <= 0 || from != null && from.InstanceId != m.InstanceId)
             {
                 return 0;
             }

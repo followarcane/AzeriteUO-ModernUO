@@ -1826,6 +1826,30 @@ namespace Server.Mobiles
             }
         }
 
+        public override bool TryChangeInstance(int id)
+        {
+            var oldMap = Map;
+            if (DesignContext != null || !base.TryChangeInstance(id))
+            {
+                return false;
+            }
+
+            if (Map != oldMap && AllFollowers != null)
+            {
+                foreach (var follower in AllFollowers)
+                {
+                    if (follower is BaseCreature { Controlled: true } pet && pet.ControlMaster == this &&
+                        pet.Map == oldMap && InRange(pet.Location, 3) &&
+                        pet.ControlOrder is OrderType.Come or OrderType.Follow or OrderType.Guard)
+                    {
+                        pet.TryChangeInstance(id);
+                    }
+                }
+            }
+
+            return true;
+        }
+
         public override void MoveToWorld(Point3D loc, Map map)
         {
             base.MoveToWorld(loc, map);
@@ -2693,6 +2717,11 @@ namespace Server.Mobiles
 
         public override void Damage(int amount, Mobile from = null, bool informMount = true, bool ignoreEvilOmen = false)
         {
+            if (from != null && from.InstanceId != InstanceId)
+            {
+                return;
+            }
+
             var damageBonus = 1.0;
 
             if (EvilOmenSpell.EndEffect(this) && !ignoreEvilOmen)
@@ -3238,6 +3267,11 @@ namespace Server.Mobiles
 
         public override bool CanSee(Mobile m)
         {
+            if (m.InstanceId != InstanceId)
+            {
+                return false;
+            }
+
             if (m is CharacterStatue statue)
             {
                 statue.OnRequestedAnimation(this);
@@ -3728,6 +3762,11 @@ namespace Server.Mobiles
 
         public override ApplyPoisonResult ApplyPoison(Mobile from, Poison poison)
         {
+            if (from != null && from.InstanceId != InstanceId)
+            {
+                return ApplyPoisonResult.Immune;
+            }
+
             if (!Alive)
             {
                 return ApplyPoisonResult.Immune;
