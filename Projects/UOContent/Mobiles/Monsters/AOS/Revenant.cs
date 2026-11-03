@@ -88,6 +88,11 @@ namespace Server.Mobiles
                 return;
             }
 
+            if (m_Target.InstanceId != InstanceId)
+            {
+                return;
+            }
+
             if (Map != m_Target.Map || !InRange(m_Target, 15))
             {
                 var fromMap = Map;

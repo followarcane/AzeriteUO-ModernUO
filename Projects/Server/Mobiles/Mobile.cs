@@ -2521,7 +2521,9 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
     [CommandProperty(AccessLevel.Counselor)]
     public int InstanceId => (m_Map == Map.Internal && Player ? LogoutMap : m_Map)?.InstanceId ?? 0;
 
-    public virtual bool TryChangeInstance(int id)
+    public virtual bool TryChangeInstance(int id) => TryChangeInstance(id, Location);
+
+    protected bool TryChangeInstance(int id, Point3D arrival)
     {
         if (Deleted || Map == null || Map == Map.Internal || Map.GetInstance(id) is not { } destination)
         {
@@ -2530,17 +2532,29 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
 
         if (destination != Map)
         {
-            NetState?.CancelAllTrades();
-            if (FindBankNoCreate() is { Opened: true } bank)
+            if (Holding is { } held)
             {
-                bank.Close();
+                if (!PlaceInBackpack(held))
+                {
+                    SendMessage("Put down the item you are holding before changing worlds.");
+                    return false;
+                }
+
+                Holding = null;
+                held.ClearBounce();
             }
 
+            NetState?.CancelAllTrades();
             Combatant = null;
-            ChangeMap(destination);
+            OnBeforeInstanceChange(destination);
+            Relocate(arrival, destination);
         }
 
         return Map == destination;
+    }
+
+    protected virtual void OnBeforeInstanceChange(Map destination)
+    {
     }
 
     [CommandProperty(AccessLevel.Counselor, AccessLevel.GameMaster)]
@@ -2635,6 +2649,11 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
             return;
         }
 
+        Relocate(newLocation, map);
+    }
+
+    private void Relocate(Point3D newLocation, Map map)
+    {
         if (m_Map == map)
         {
             SetLocation(newLocation, true);

@@ -203,7 +203,7 @@ namespace Server.Mobiles
 
         public void EndStable(Mobile from, BaseCreature pet)
         {
-            if (Deleted || !from.CheckAlive() || from is not PlayerMobile pm)
+            if (Deleted || from.Map != Map || pet.Map != Map || !from.CheckAlive() || from is not PlayerMobile pm)
             {
                 return;
             }
@@ -278,7 +278,7 @@ namespace Server.Mobiles
 
         public void Claim(Mobile from, string petName = null)
         {
-            if (Deleted || !from.CheckAlive() || from is not PlayerMobile pm)
+            if (Deleted || from.Map != Map || !from.CheckAlive() || from is not PlayerMobile pm)
             {
                 return;
             }

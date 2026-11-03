@@ -3387,6 +3387,14 @@ namespace Server.Mobiles
         // Who answers for this creature: its owner or its summoner. Never an enraged creature's meer.
         public Mobile GetMaster() => ControlMaster ?? SummonMaster;
 
+        internal void JoinOwnerInstance(PlayerMobile owner, Map previousMap)
+        {
+            if (!IsStabled && Map == previousMap && GetMaster() == owner)
+            {
+                TryChangeInstance(owner.InstanceId, owner.Location);
+            }
+        }
+
         public virtual bool IsMonster => !Controlled || (GetMaster() as BaseCreature)?.IsMonster == true;
 
         public bool InActivePVPCombat() =>

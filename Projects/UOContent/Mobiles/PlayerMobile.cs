@@ -1834,21 +1834,34 @@ namespace Server.Mobiles
                 return false;
             }
 
-            if (Map != oldMap && AllFollowers != null)
+            if (Map == oldMap)
             {
-                foreach (var follower in AllFollowers)
+                return true;
+            }
+
+            if (AllFollowers is { Count: > 0 } active)
+            {
+                // Entering a region can change ownership or remove a follower.
+                using var followers = PooledRefQueue<BaseCreature>.Create(active.Count);
+                foreach (var follower in active)
                 {
-                    if (follower is BaseCreature { Controlled: true } pet && pet.ControlMaster == this &&
-                        pet.Map == oldMap && InRange(pet.Location, 3) &&
-                        pet.ControlOrder is OrderType.Come or OrderType.Follow or OrderType.Guard)
+                    if (follower is BaseCreature pet)
                     {
-                        pet.TryChangeInstance(id);
+                        followers.Enqueue(pet);
                     }
+                }
+
+                while (followers.Count > 0)
+                {
+                    followers.Dequeue().JoinOwnerInstance(this, oldMap);
                 }
             }
 
             return true;
         }
+
+        protected override void OnBeforeInstanceChange(Map destination) =>
+            WorldTransitionGump.DisplayTo(this, destination);
 
         public override void MoveToWorld(Point3D loc, Map map)
         {
